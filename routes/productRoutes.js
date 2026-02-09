@@ -10,8 +10,13 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const products = await Product.find();
+
+    // Extra: helpful log
+    console.log("Fetched products:", products.length);
+
     res.json(products);
   } catch (error) {
+    console.error("Error fetching products:", error.message);
     res.status(500).json({ message: error.message });
   }
 });
@@ -22,10 +27,30 @@ router.get("/", async (req, res) => {
  */
 router.post("/", async (req, res) => {
   try {
-    const product = new Product(req.body);
+    const { name, price, image, description, stock } = req.body;
+
+    // Basic validation (SAFE addition)
+    if (!name || !price) {
+      return res.status(400).json({
+        message: "Name and price are required",
+      });
+    }
+
+    const product = new Product({
+      name,
+      price,
+      image: image || "",
+      description: description || "",
+      stock: stock || 0,
+    });
+
     const savedProduct = await product.save();
+
+    console.log("Product added:", savedProduct.name);
+
     res.status(201).json(savedProduct);
   } catch (error) {
+    console.error("Error creating product:", error.message);
     res.status(400).json({ message: error.message });
   }
 });
