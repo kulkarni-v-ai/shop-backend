@@ -1,5 +1,6 @@
 import express from "express";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";   // ⭐ ADD THIS
 import Admin from "../models/Admin.js";
 
 const router = express.Router();
@@ -19,8 +20,17 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid password" });
     }
 
+    //  CREATE JWT TOKEN (NEW)
+    const token = jwt.sign(
+      { id: admin._id },
+      "secretkey",
+      { expiresIn: "7d" }
+    );
+
+    //  RETURN TOKEN ALONG WITH EXISTING RESPONSE
     res.json({
       message: "Login successful",
+      token,   //  NEW
       admin: {
         id: admin._id,
         username: admin.username
