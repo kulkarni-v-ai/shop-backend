@@ -11,6 +11,12 @@ const orderSchema = new mongoose.Schema(
       },
     ],
     total: Number,
+
+    status: {
+  type: String,
+  default: "Pending",
+},
+
   },
   { timestamps: true }
 );
