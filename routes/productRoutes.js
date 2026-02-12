@@ -64,5 +64,29 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+/* UPDATE PRODUCT */
+router.put("/:id", async (req, res) => {
+  try {
+    const { name, price, image, description, stock } = req.body;
+
+    const updated = await Product.findByIdAndUpdate(
+      req.params.id,
+      {
+        name,
+        price,
+        image,
+        description,
+        stock
+      },
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 export default router;
