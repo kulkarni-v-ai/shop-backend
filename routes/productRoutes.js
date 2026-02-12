@@ -1,5 +1,5 @@
 import express from "express";
-import Product from "../models/Product.js"; 
+import Product from "../models/Product.js";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
@@ -15,6 +15,7 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage });
+
 
 /**
  * GET /api/products
