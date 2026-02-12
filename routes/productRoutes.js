@@ -54,5 +54,15 @@ router.post("/", async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 });
+/* DELETE PRODUCT */
+router.delete("/:id", async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: "Product deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 export default router;
