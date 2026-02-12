@@ -1,7 +1,20 @@
 import express from "express";
-import Product from "../models/Product.js";
+import Product from "../models/Product.js"; 
+import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "products",
+    allowed_formats: ["jpg", "png", "jpeg", "webp"],
+  },
+});
+
+const upload = multer({ storage });
 
 /**
  * GET /api/products
@@ -25,9 +38,10 @@ router.get("/", async (req, res) => {
  * POST /api/products
  * Create a product
  */
-router.post("/", async (req, res) => {
+router.post("/", upload.single("image"), async (req, res) => {
   try {
-    const { name, price, image, description, stock } = req.body;
+   const { name, price, description, stock } = req.body;
+
 
     // Basic validation (SAFE addition)
     if (!name || !price) {
@@ -39,7 +53,7 @@ router.post("/", async (req, res) => {
     const product = new Product({
       name,
       price,
-      image: image || "",
+     image: req.file ? req.file.path : "",
       description: description || "",
       stock: stock || 0,
     });
@@ -86,6 +100,8 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+
 
 
 
