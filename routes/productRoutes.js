@@ -57,6 +57,7 @@ router.post("/", upload.single("image"), async (req, res) => {
      image: req.file ? req.file.path : "",
       description: description || "",
       stock: stock || 0,
+      category: category || "General"
     });
 
     const savedProduct = await product.save();

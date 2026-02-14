@@ -21,6 +21,9 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    category: {
+      type: String,
+    }
   },
   { timestamps: true }
 );
