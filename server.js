@@ -30,26 +30,23 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (Postman, curl, mobile apps)
+    // Allow requests with no origin (Postman, curl, etc.)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      "http://localhost:5173",
-      "http://localhost:5178",
-      "http://localhost:5179"
-    ].filter(Boolean);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, origin); // reflect exact origin
-    } else {
-      callback(new Error("Not allowed by CORS: " + origin));
+    // Allow ANY localhost port
+    if (origin.startsWith("http://localhost")) {
+      return callback(null, true);
     }
+
+    // Allow production frontend
+    if (origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS: " + origin));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
-
 // Body parser with size limit to prevent abuse
 app.use(express.json({ limit: "10kb" }));
 
