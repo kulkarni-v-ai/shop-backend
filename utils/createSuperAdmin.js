@@ -17,13 +17,18 @@ const createSuperAdmin = async () => {
       10
     );
 
-    await User.create({
+   await User.updateOne(
+  { username: process.env.SUPERADMIN_USERNAME },
+  {
+    $setOnInsert: {
       name: "Super Admin",
-      username: "superadmin",
       email: process.env.SUPERADMIN_EMAIL,
       password: hashedPassword,
       role: "superadmin",
-    });
+    }
+  },
+  { upsert: true }
+);
 
     console.log("🔥 Superadmin created successfully");
   } catch (error) {
