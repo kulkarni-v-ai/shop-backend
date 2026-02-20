@@ -3,36 +3,34 @@ import bcrypt from "bcryptjs";
 
 const createSuperAdmin = async () => {
   try {
-    const exists = await User.findOne({
-      email: process.env.SUPERADMIN_EMAIL,
-    });
+    const username = process.env.SUPERADMIN_USERNAME || "superadmin";
+    const email = process.env.SUPERADMIN_EMAIL || "superadmin@hovshop.com";
+    const password = process.env.SUPERADMIN_PASSWORD;
 
-    if (exists) {
-      console.log("✅ Superadmin already exists");
+    if (!password) {
+      console.warn("⚠️ SUPERADMIN_PASSWORD not set in .env. Skipping sync.");
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(
-      process.env.SUPERADMIN_PASSWORD,
-      10
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Always synchronize with .env values to ensure credentials stay up-to-date
+    await User.updateOne(
+      { role: "superadmin" }, // Target the superadmin role
+      {
+        $set: {
+          username: username,
+          email: email,
+          password: hashedPassword,
+          name: "Super Admin",
+        },
+      },
+      { upsert: true }
     );
 
-   await User.updateOne(
-  { username: process.env.SUPERADMIN_USERNAME },
-  {
-    $setOnInsert: {
-      name: "Super Admin",
-      email: process.env.SUPERADMIN_EMAIL,
-      password: hashedPassword,
-      role: "superadmin",
-    }
-  },
-  { upsert: true }
-);
-
-    console.log("🔥 Superadmin created successfully");
+    console.log("✅ Superadmin credentials synchronized with .env");
   } catch (error) {
-    console.error("❌ Error creating superadmin:", error.message);
+    console.error("❌ Error syncing superadmin:", error.message);
   }
 };
 
