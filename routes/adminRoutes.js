@@ -48,6 +48,7 @@ router.post("/login", async (req, res) => {
       ipAddress: req.ip
     });
   } catch (error) {
+    console.error("Login Route Error:", error);
     res.status(500).json({ message: "Something went wrong" });
   }
 });
