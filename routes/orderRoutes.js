@@ -1,9 +1,14 @@
 import express from "express";
 import Order from "../models/Order.js";
+import verifyToken, { authorize } from "../middleware/auth.js";
+import { logAction } from "../utils/logger.js";
 
 const router = express.Router();
 
-/* CREATE ORDER */
+/**
+ * POST /api/orders
+ * Create an order (public — customers place orders)
+ */
 router.post("/", async (req, res) => {
   try {
     const { items, total } = req.body;
@@ -17,21 +22,39 @@ router.post("/", async (req, res) => {
   }
 });
 
-/* GET ORDERS */
-router.get("/", async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json(orders);
+/**
+ * GET /api/orders
+ * Get all orders (admin/manager/superadmin)
+ */
+router.get("/", verifyToken, authorize("superadmin", "admin", "manager"), async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-
-// UPDATE ORDER STATUS
-router.put("/:id", async (req, res) => {
+/**
+ * PUT /api/orders/:id
+ * Update order status (superadmin/admin/manager)
+ */
+router.put("/:id", verifyToken, authorize("superadmin", "admin", "manager"), async (req, res) => {
   try {
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       { status: req.body.status },
       { new: true }
     );
+
+    await logAction({
+      userId: req.admin.id,
+      role: req.admin.role,
+      actionType: "UPDATE_ORDER",
+      targetId: req.params.id,
+      metadata: { newStatus: req.body.status },
+      ipAddress: req.ip
+    });
 
     res.json(updatedOrder);
   } catch (error) {

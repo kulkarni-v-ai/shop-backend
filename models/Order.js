@@ -13,12 +13,14 @@ const orderSchema = new mongoose.Schema(
     total: Number,
 
     status: {
-  type: String,
-  default: "Pending",
-},
+      type: String,
+      default: "Pending",
+    },
 
   },
   { timestamps: true }
 );
+
+orderSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

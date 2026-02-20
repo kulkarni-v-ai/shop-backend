@@ -23,10 +23,17 @@ const productSchema = new mongoose.Schema(
     },
     category: {
       type: String,
+    },
+    views: {
+      type: Number,
+      default: 0,
     }
   },
   { timestamps: true }
 );
+
+productSchema.index({ views: -1 });
+productSchema.index({ stock: 1 });
 
 const Product = mongoose.model("Product", productSchema);
 
