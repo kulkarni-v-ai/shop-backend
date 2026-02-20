@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import User from "../models/Admin.js";
 import bcrypt from "bcryptjs";
 
 const createSuperAdmin = async () => {
