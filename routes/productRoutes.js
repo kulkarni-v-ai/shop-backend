@@ -27,7 +27,8 @@ router.get("/", async (req, res) => {
 
     // Extra: helpful log
     console.log("Fetched products:", products.length);
-
+    console.log("BODY:", req.body);
+console.log("FILE:", req.file);
     res.json(products);
   } catch (error) {
     console.error("Error fetching products:", error.message);
@@ -41,10 +42,10 @@ router.get("/", async (req, res) => {
  */
 router.post("/", upload.single("image"), async (req, res) => {
   try {
-   const { name, price, description, stock } = req.body;
+    const { name, price, description, stock } = req.body;
 
+    const category = req.body.category || "General";
 
-    // Basic validation (SAFE addition)
     if (!name || !price) {
       return res.status(400).json({
         message: "Name and price are required",
@@ -53,20 +54,18 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     const product = new Product({
       name,
-      price,
-     image: req.file ? req.file.path : "",
+      price: Number(price),
+      image: req.file ? req.file.path : "",
       description: description || "",
       stock: stock || 0,
-      category: category || "General"
+      category: category
     });
 
     const savedProduct = await product.save();
 
-    console.log("Product added:", savedProduct.name);
-
     res.status(201).json(savedProduct);
   } catch (error) {
-    console.error("Error creating product:", error.message);
+    console.error("Error creating product:", error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -83,7 +82,7 @@ router.delete("/:id", async (req, res) => {
 /* UPDATE PRODUCT */
 router.put("/:id", async (req, res) => {
   try {
-    const { name, price, image, description, stock } = req.body;
+    const { name, price, image, description, stock , category} = req.body;
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
