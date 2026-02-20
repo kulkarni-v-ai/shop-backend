@@ -1,9 +1,11 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
 
 const createSuperAdmin = async () => {
   try {
-    const exists = await User.findOne({ email: process.env.SUPERADMIN_EMAIL });
+    const exists = await User.findOne({
+      email: process.env.SUPERADMIN_EMAIL,
+    });
 
     if (exists) {
       console.log("✅ Superadmin already exists");
@@ -28,4 +30,4 @@ const createSuperAdmin = async () => {
   }
 };
 
-module.exports = createSuperAdmin;
+export default createSuperAdmin;

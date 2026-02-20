@@ -8,6 +8,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import createSuperAdmin from "./utils/createSuperAdmin.js";
 import dns from "dns";
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
@@ -61,6 +62,7 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
+    createSuperAdmin();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
