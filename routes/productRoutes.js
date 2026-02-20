@@ -80,19 +80,25 @@ router.delete("/:id", async (req, res) => {
 });
 
 /* UPDATE PRODUCT */
-router.put("/:id", async (req, res) => {
+router.put("/:id", upload.single("image"), async (req, res) => {
   try {
-    const { name, price, image, description, stock , category} = req.body;
+    const { name, price, description, stock, category } = req.body;
+
+    const updateData = {
+      name,
+      price,
+      description,
+      stock,
+      category,
+    };
+
+    if (req.file) {
+      updateData.image = req.file.path;
+    }
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
-      {
-        name,
-        price,
-        image,
-        description,
-        stock
-      },
+      updateData,
       { new: true }
     );
 
