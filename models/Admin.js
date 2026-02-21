@@ -18,16 +18,15 @@ const adminSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Protect the developer-controlled superadmin
-adminSchema.pre("findOneAndDelete", async function (next) {
+adminSchema.pre("findOneAndDelete", async function () {
   const query = this.getQuery();
   const docToUpdate = await this.model.findOne(query);
   if (docToUpdate && docToUpdate.role === "superadmin") {
-    return next(new Error("Cannot delete a superadmin account."));
+    throw new Error("Cannot delete a superadmin account.");
   }
-  next();
 });
 
-adminSchema.pre("findOneAndUpdate", async function (next) {
+adminSchema.pre("findOneAndUpdate", async function () {
   const query = this.getQuery();
   const update = this.getUpdate();
 
@@ -35,9 +34,8 @@ adminSchema.pre("findOneAndUpdate", async function (next) {
 
   // Prevent changing a superadmin's role to something else
   if (docToUpdate && docToUpdate.role === "superadmin" && update.role && update.role !== "superadmin") {
-    return next(new Error("Cannot demote a superadmin account."));
+    throw new Error("Cannot demote a superadmin account.");
   }
-  next();
 });
 
 export default mongoose.model("Admin", adminSchema);
