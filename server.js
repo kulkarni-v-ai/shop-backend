@@ -8,6 +8,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import createSuperAdmin from "./utils/createSuperAdmin.js";
 import dns from "dns";
 
@@ -55,6 +56,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", activityRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/auth", authRoutes);
 
 
 app.get("/", (req, res) => {
