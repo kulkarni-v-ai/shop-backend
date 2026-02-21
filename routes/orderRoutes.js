@@ -11,9 +11,14 @@ const router = express.Router();
  */
 router.post("/", async (req, res) => {
   try {
-    const { items, total } = req.body;
+    const { items, total, userId, shippingAddress } = req.body;
 
-    const order = new Order({ items, total });
+    const order = new Order({
+      items,
+      total,
+      user: userId || null,
+      shippingAddress: shippingAddress || null
+    });
     const saved = await order.save();
 
     res.json(saved);
@@ -28,7 +33,7 @@ router.post("/", async (req, res) => {
  */
 router.get("/", verifyToken, authorize("superadmin", "admin", "manager"), async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find().populate("user", "name email").sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: err.message });

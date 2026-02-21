@@ -233,4 +233,30 @@ router.delete("/customers/:id", verifyToken, authorize("superadmin"), async (req
   }
 });
 
+router.put("/customers/:id", verifyToken, authorize("superadmin", "admin", "manager"), async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) return res.status(404).json({ message: "Customer not found" });
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (address) {
+      user.address = {
+        street: address.street || user.address?.street || "",
+        city: address.city || user.address?.city || "",
+        state: address.state || user.address?.state || "",
+        zip: address.zip || user.address?.zip || "",
+      };
+    }
+
+    await user.save();
+
+    res.json({ message: "Customer updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

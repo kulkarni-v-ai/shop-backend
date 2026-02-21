@@ -37,7 +37,7 @@ router.get("/", async (req, res) => {
  * POST /api/products
  * Create a product (admin/superadmin)
  */
-router.post("/", verifyToken, authorize("superadmin", "admin"), upload.single("image"), async (req, res) => {
+router.post("/", verifyToken, authorize("superadmin", "admin", "manager"), upload.single("image"), async (req, res) => {
   try {
     const { name, price, description, stock } = req.body;
 

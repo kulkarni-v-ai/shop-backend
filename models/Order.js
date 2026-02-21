@@ -16,7 +16,17 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: "Pending",
     },
-
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    shippingAddress: {
+      name: String,
+      street: String,
+      city: String,
+      state: String,
+      zip: String,
+    }
   },
   { timestamps: true }
 );

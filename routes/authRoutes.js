@@ -107,9 +107,17 @@ router.put("/profile", verifyToken, async (req, res) => {
         const user = await User.findById(req.admin.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        const { name, password } = req.body;
+        const { name, password, address } = req.body;
         if (name) user.name = name;
         if (password) user.password = password;
+        if (address) {
+            user.address = {
+                street: address.street || user.address?.street || "",
+                city: address.city || user.address?.city || "",
+                state: address.state || user.address?.state || "",
+                zip: address.zip || user.address?.zip || "",
+            };
+        }
 
         await user.save();
 
@@ -119,6 +127,7 @@ router.put("/profile", verifyToken, async (req, res) => {
             email: user.email,
             avatar: user.avatar,
             role: user.role,
+            address: user.address,
             message: "Profile updated successfully"
         });
     } catch (error) {
