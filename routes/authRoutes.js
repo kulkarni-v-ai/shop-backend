@@ -1,12 +1,13 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import verifyToken, { authorize } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Helper to create JWT
-const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
+const createToken = (id, role = "customer") => {
+    return jwt.sign({ id, role }, process.env.JWT_SECRET, {
         expiresIn: "30d",
     });
 };
@@ -32,7 +33,7 @@ router.post("/register", async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
-            token: createToken(user._id),
+            token: createToken(user._id, user.role),
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -52,7 +53,7 @@ router.post("/login", async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                token: createToken(user._id),
+                token: createToken(user._id, user.role),
             });
         } else {
             res.status(401).json({ message: "Invalid email or password" });
@@ -91,7 +92,34 @@ router.post("/google", async (req, res) => {
             name: user.name,
             email: user.email,
             avatar: user.avatar,
-            token: createToken(user._id),
+            token: createToken(user._id, user.role),
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update user profile (Name & Password)
+
+router.put("/profile", verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.admin.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const { name, password } = req.body;
+        if (name) user.name = name;
+        if (password) user.password = password;
+
+        await user.save();
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role,
+            message: "Profile updated successfully"
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
