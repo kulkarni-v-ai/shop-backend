@@ -14,15 +14,15 @@ const createSuperAdmin = async () => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Always synchronize with .env values to ensure credentials stay up-to-date
+    // Query by username to avoid duplicate key errors
     await User.updateOne(
-      { role: "superadmin" }, // Target the superadmin role
+      { username: username },
       {
         $set: {
-          username: username,
           email: email,
           password: hashedPassword,
           name: "Super Admin",
+          role: "superadmin", // Ensure they have the correct role
         },
       },
       { upsert: true }
