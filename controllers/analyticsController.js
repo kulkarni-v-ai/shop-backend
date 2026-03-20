@@ -83,28 +83,22 @@ export const getStats = async (req, res) => {
 
         const summary = orderStats[0] || { totalOrders: 0, totalRevenue: 0 };
 
-        // Calculate total views across all products
-        const totalViewsResult = await Product.aggregate([
-            { $group: { _id: null, totalViews: { $sum: "$views" } } }
-        ]);
-        const viewsCount = totalViewsResult[0]?.totalViews || 0;
-
         res.json({
-            overview: {
+            summary: {
                 totalOrders: summary.totalOrders,
                 totalRevenue: summary.totalRevenue,
                 totalProducts: totalProducts,
-                lowStockCount: lowStockCount,
-                viewsCount: viewsCount,
-                conversionRate: summary.totalOrders > 0 ? ((summary.totalOrders / (viewsCount || 1)) * 100).toFixed(1) : 0
+                lowStockCount: lowStockCount
             },
             ordersChart: ordersChart.map(day => ({
                 date: day._id,
                 orders: day.count,
                 revenue: day.revenue
             })),
-            topPurchased: topSelling,
-            topBrowsed: mostViewed,
+            topProducts: {
+                selling: topSelling,
+                viewed: mostViewed
+            },
             lowStock: lowStockList
         });
 

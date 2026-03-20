@@ -2,7 +2,6 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
-import User from "../models/User.js";
 import verifyToken, { authorize } from "../middleware/auth.js";
 import { logAction } from "../utils/logger.js";
 import { getStats } from "../controllers/analyticsController.js";
@@ -49,7 +48,6 @@ router.post("/login", async (req, res) => {
       ipAddress: req.ip
     });
   } catch (error) {
-    console.error("Login Route Error:", error);
     res.status(500).json({ message: "Something went wrong" });
   }
 });
@@ -85,7 +83,7 @@ router.post("/register", verifyToken, authorize("superadmin"), async (req, res) 
     });
 
     res.status(201).json({
-      _id: savedAdmin._id,
+      id: savedAdmin._id,
       username: savedAdmin.username,
       role: savedAdmin.role,
     });
@@ -132,77 +130,36 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
   }
 });
 
-/* UNIVERSAL ADMIN UPDATE: Change username, role, or password (Superadmin Only) */
-router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) => {
+/* SUPERADMIN ONLY: CHANGE USER ROLE */
+router.put("/users/:id/role", verifyToken, authorize("superadmin"), async (req, res) => {
   try {
-    const { username, role, password } = req.body;
-    const adminToUpdate = await Admin.findById(req.params.id);
+    const { role } = req.body;
+    if (!["superadmin", "admin", "manager"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
 
+    // Explicit controller-level validation
+    const adminToUpdate = await Admin.findById(req.params.id);
     if (!adminToUpdate) {
       return res.status(404).json({ message: "Admin not found" });
     }
-
-    // Protection logic for superadmins
-    if (adminToUpdate.role === "superadmin" && req.admin.id !== adminToUpdate._id.toString()) {
-      return res.status(403).json({ message: "Only a superadmin can edit themselves" });
+    if (adminToUpdate.role === "superadmin") {
+      return res.status(403).json({ message: "Cannot modify the role of a superadmin account" });
     }
 
-    if (username) adminToUpdate.username = username;
-
-    // Role change protection: cannot demote last superadmin (implicitly handled if only one)
-    if (role && adminToUpdate.role === "superadmin" && role !== "superadmin") {
-      return res.status(403).json({ message: "Cannot demote a superadmin" });
-    }
-    if (role) adminToUpdate.role = role;
-
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      adminToUpdate.password = await bcrypt.hash(password, salt);
-    }
-
+    adminToUpdate.role = role;
     await adminToUpdate.save();
 
     await logAction({
       userId: req.admin.id,
       role: req.admin.role,
-      actionType: "ADMIN_UPDATE",
+      actionType: "ROLE_CHANGE",
       targetId: req.params.id,
-      metadata: { username: adminToUpdate.username, role: adminToUpdate.role },
+      metadata: { newRole: role },
       ipAddress: req.ip
     });
 
-    res.json({
-      message: "User updated successfully", admin: {
-        _id: adminToUpdate._id,
-        username: adminToUpdate.username,
-        role: adminToUpdate.role
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* PERSONAL PROFILE UPDATE: Allow logged-in admin to change their own username/password */
-router.put("/profile", verifyToken, async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const admin = await Admin.findById(req.admin.id);
-
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
-
-    if (username) admin.username = username;
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      admin.password = await bcrypt.hash(password, salt);
-    }
-
-    await admin.save();
-
-    res.json({
-      message: "Profile updated successfully",
-      admin: { id: admin._id, username: admin.username, role: admin.role }
-    });
+    res.json({ message: "Role updated successfully", admin: adminToUpdate });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -210,53 +167,5 @@ router.put("/profile", verifyToken, async (req, res) => {
 
 /* ADMIN ANALYTICS: Exposed at /api/admin/stats */
 router.get("/stats", verifyToken, authorize("superadmin", "admin", "manager"), getStats);
-
-/* CUSTOMER MANAGEMENT (Superadmin/Admin) */
-router.get("/customers", verifyToken, authorize("superadmin", "admin"), async (req, res) => {
-  try {
-    const users = await User.find({ role: "customer" }).select("-password");
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-router.delete("/customers/:id", verifyToken, authorize("superadmin"), async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: "Customer not found" });
-
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: "Customer deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-router.put("/customers/:id", verifyToken, authorize("superadmin", "admin", "manager"), async (req, res) => {
-  try {
-    const { name, email, address } = req.body;
-    const user = await User.findById(req.params.id);
-
-    if (!user) return res.status(404).json({ message: "Customer not found" });
-
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (address) {
-      user.address = {
-        street: address.street || user.address?.street || "",
-        city: address.city || user.address?.city || "",
-        state: address.state || user.address?.state || "",
-        zip: address.zip || user.address?.zip || "",
-      };
-    }
-
-    await user.save();
-
-    res.json({ message: "Customer updated successfully", user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 export default router;
