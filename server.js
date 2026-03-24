@@ -21,7 +21,12 @@ app.use(helmet());
 
 // CORS — restrict to known frontend origin
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
+  origin: [
+    process.env.FRONTEND_URL || "http://localhost:5173", 
+    "https://houseofvisuals.co.in", 
+    "https://www.houseofvisuals.co.in"
+  ],
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
 }));
 
