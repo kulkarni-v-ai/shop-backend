@@ -28,8 +28,8 @@ app.use(cors({
     process.env.FRONTEND_URL || "http://localhost:5173", 
     "https://houseofvisuals.co.in", 
     "https://www.houseofvisuals.co.in",
-    "https://hov-admin.vercel.app",
-    "https://hov-admin.netlify.app",
+    "https://hq.houseofvisuals.co.in",
+    "https://hov-admin.onrender.com",
     "http://localhost:5174",
     "http://localhost:5175"
   ],
