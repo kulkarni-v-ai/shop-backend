@@ -11,6 +11,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    images: {
+      type: [String],
+      default: [],
+    },
+    // Keep legacy field for backward compatibility with existing data
     image: {
       type: String,
     },
@@ -29,8 +34,17 @@ const productSchema = new mongoose.Schema(
       default: 0,
     }
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Virtual: always return a flat images array (merge legacy `image` into `images`)
+productSchema.methods.getAllImages = function () {
+  const imgs = this.images && this.images.length > 0 ? [...this.images] : [];
+  if (this.image && !imgs.includes(this.image)) {
+    imgs.unshift(this.image);
+  }
+  return imgs;
+};
 
 productSchema.index({ views: -1 });
 productSchema.index({ stock: 1 });

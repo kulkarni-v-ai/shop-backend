@@ -20,13 +20,30 @@ const upload = multer({ storage });
 
 
 /**
+ * Helper: normalize a product document so the response always includes
+ * a unified `images` array (merging legacy `image` field).
+ */
+function normalizeProduct(doc) {
+  const obj = doc.toObject ? doc.toObject() : { ...doc };
+  const images = obj.images && obj.images.length > 0 ? [...obj.images] : [];
+  if (obj.image && !images.includes(obj.image)) {
+    images.unshift(obj.image);
+  }
+  obj.images = images;
+  // Keep `image` as first image for backward compat
+  obj.image = images[0] || "";
+  return obj;
+}
+
+
+/**
  * GET /api/products
  * Fetch all products (public)
  */
 router.get("/", async (req, res) => {
   try {
     const products = await Product.find();
-    res.json(products);
+    res.json(products.map(normalizeProduct));
   } catch (error) {
     console.error("Error fetching products:", error.message);
     res.status(500).json({ message: error.message });
@@ -35,9 +52,9 @@ router.get("/", async (req, res) => {
 
 /**
  * POST /api/products
- * Create a product (admin/superadmin)
+ * Create a product (admin/superadmin) — supports up to 5 images
  */
-router.post("/", verifyToken, authorize("superadmin", "admin"), upload.single("image"), async (req, res) => {
+router.post("/", verifyToken, authorize("superadmin", "admin"), upload.array("images", 5), async (req, res) => {
   try {
     const { name, price, description, stock } = req.body;
 
@@ -49,10 +66,13 @@ router.post("/", verifyToken, authorize("superadmin", "admin"), upload.single("i
       });
     }
 
+    const imageUrls = req.files ? req.files.map((f) => f.path) : [];
+
     const product = new Product({
       name,
       price: Number(price),
-      image: req.file ? req.file.path : "",
+      images: imageUrls,
+      image: imageUrls[0] || "",
       description: description || "",
       stock: stock || 0,
       category: category
@@ -69,7 +89,7 @@ router.post("/", verifyToken, authorize("superadmin", "admin"), upload.single("i
       ipAddress: req.ip
     });
 
-    res.status(201).json(savedProduct);
+    res.status(201).json(normalizeProduct(savedProduct));
   } catch (error) {
     console.error("Error creating product:", error);
     res.status(400).json({ message: error.message });
@@ -100,11 +120,29 @@ router.delete("/:id", verifyToken, authorize("superadmin", "admin"), async (req,
 
 /**
  * PUT /api/products/:id
- * Update a product (superadmin/admin only)
+ * Update a product (superadmin/admin only) — supports up to 5 images
  */
-router.put("/:id", verifyToken, authorize("superadmin", "admin"), upload.single("image"), async (req, res) => {
+router.put("/:id", verifyToken, authorize("superadmin", "admin"), upload.array("images", 5), async (req, res) => {
   try {
     const { name, price, description, stock, category } = req.body;
+
+    // Parse the list of images the user wants to keep (sent from frontend)
+    let existingImages = [];
+    if (req.body.existingImages) {
+      try {
+        existingImages = JSON.parse(req.body.existingImages);
+      } catch {
+        existingImages = Array.isArray(req.body.existingImages)
+          ? req.body.existingImages
+          : [req.body.existingImages];
+      }
+    }
+
+    // New uploaded images
+    const newImageUrls = req.files ? req.files.map((f) => f.path) : [];
+
+    // Combined: existing (kept) images + newly uploaded images
+    const allImages = [...existingImages, ...newImageUrls];
 
     const updateData = {
       name,
@@ -112,11 +150,9 @@ router.put("/:id", verifyToken, authorize("superadmin", "admin"), upload.single(
       description,
       stock,
       category,
+      images: allImages,
+      image: allImages[0] || "",
     };
-
-    if (req.file) {
-      updateData.image = req.file.path;
-    }
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
@@ -133,7 +169,7 @@ router.put("/:id", verifyToken, authorize("superadmin", "admin"), upload.single(
       ipAddress: req.ip
     });
 
-    res.json(updated);
+    res.json(normalizeProduct(updated));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

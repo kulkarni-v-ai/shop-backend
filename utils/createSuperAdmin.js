@@ -1,36 +1,38 @@
-import User from "../models/Admin.js";
+import Admin from "../models/Admin.js";
 import bcrypt from "bcryptjs";
 
+/**
+ * Syncs the owner account (tejas@hov) on every server start.
+ * Password is read from SUPERADMIN_PASSWORD env variable (set on Render).
+ * This ensures the owner always has access even if credentials are changed.
+ */
 const createSuperAdmin = async () => {
   try {
-    const username = process.env.SUPERADMIN_USERNAME || "superadmin";
-    const email = process.env.SUPERADMIN_EMAIL || "superadmin@hovshop.com";
+    const username = process.env.SUPERADMIN_USERNAME || "devcobraaa";
     const password = process.env.SUPERADMIN_PASSWORD;
 
     if (!password) {
-      console.warn("⚠️ SUPERADMIN_PASSWORD not set in .env. Skipping sync.");
+      console.warn("⚠️ SUPERADMIN_PASSWORD not set in .env. Skipping owner sync.");
       return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Query by username to avoid duplicate key errors
-    await User.updateOne(
+    // Upsert the owner account — always keep as superadmin
+    await Admin.updateOne(
       { username: username },
       {
         $set: {
-          email: email,
           password: hashedPassword,
-          name: "Super Admin",
-          role: "superadmin", // Ensure they have the correct role
+          role: "superadmin",
         },
       },
       { upsert: true }
     );
 
-    console.log("✅ Superadmin credentials synchronized with .env");
+    console.log(`✅ Owner account '${username}' synchronized with env password.`);
   } catch (error) {
-    console.error("❌ Error syncing superadmin:", error.message);
+    console.error("❌ Error syncing owner account:", error.message);
   }
 };
 
