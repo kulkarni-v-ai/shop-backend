@@ -29,7 +29,7 @@ app.use(cors({
     "https://houseofvisuals.co.in", 
     "https://www.houseofvisuals.co.in",
     "https://hq.houseofvisuals.co.in",
-    "https://hov-admin.onrender.com",
+    "https://hov-headquarterrs.onrender.com",
     "http://localhost:5174",
     "http://localhost:5175"
   ],
