@@ -21,8 +21,8 @@ const adminSchema = new mongoose.Schema({
 adminSchema.pre("findOneAndDelete", async function (next) {
   const query = this.getQuery();
   const docToUpdate = await this.model.findOne(query);
-  if (docToUpdate && docToUpdate.username === "devcobraaa") {
-    return next(new Error("Cannot delete the devcobraaa owner account."));
+  if (docToUpdate && (docToUpdate.username === "devcobraaa" || docToUpdate.username === "shivalika@hov")) {
+    return next(new Error("Cannot delete the owner account."));
   }
   next();
 });
@@ -33,9 +33,9 @@ adminSchema.pre("findOneAndUpdate", async function (next) {
 
   const docToUpdate = await this.model.findOne(query);
 
-  // Prevent changing devcobraaa's role
-  if (docToUpdate && docToUpdate.username === "devcobraaa" && update.role && update.role !== "superadmin") {
-    return next(new Error("Cannot demote the devcobraaa owner account."));
+  // Prevent changing owner's role
+  if (docToUpdate && (docToUpdate.username === "devcobraaa" || docToUpdate.username === "shivalika@hov") && update.role && update.role !== "superadmin") {
+    return next(new Error("Cannot demote the owner account."));
   }
   next();
 });
