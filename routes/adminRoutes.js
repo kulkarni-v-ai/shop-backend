@@ -134,11 +134,11 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
   }
 });
 
-/* SUPERADMIN ONLY: CHANGE USER ROLE */
-router.put("/users/:id/role", verifyToken, authorize("superadmin"), async (req, res) => {
+/* SUPERADMIN ONLY: UPDATE USER (Role, Username, Password) */
+router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) => {
   try {
-    const { role } = req.body;
-    if (!["superadmin", "admin", "manager"].includes(role)) {
+    const { role, username, password } = req.body;
+    if (role && !["superadmin", "admin", "manager"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }
 
@@ -154,19 +154,49 @@ router.put("/users/:id/role", verifyToken, authorize("superadmin"), async (req, 
       return res.status(403).json({ message: "Only devcobraaa can modify superadmin accounts" });
     }
 
-    adminToUpdate.role = role;
+    if (role) adminToUpdate.role = role;
+    if (username) adminToUpdate.username = username;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      adminToUpdate.password = await bcrypt.hash(password, salt);
+    }
+    
     await adminToUpdate.save();
 
     await logAction({
       userId: req.admin.id,
       role: req.admin.role,
-      actionType: "ROLE_CHANGE",
+      actionType: "UPDATE_ADMIN",
       targetId: req.params.id,
-      metadata: { newRole: role },
+      metadata: { newRole: role, newUsername: username },
       ipAddress: req.ip
     });
 
-    res.json({ message: "Role updated successfully", admin: adminToUpdate });
+    res.json({ message: "User updated successfully", admin: adminToUpdate });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* UPDATE SELF PROFILE */
+router.put("/profile", verifyToken, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const adminToUpdate = await Admin.findById(req.admin.id);
+    
+    if (!adminToUpdate) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    if (username) adminToUpdate.username = username;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      adminToUpdate.password = await bcrypt.hash(password, salt);
+    }
+
+    await adminToUpdate.save();
+
+    res.json({ message: "Profile updated successfully", admin: adminToUpdate });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
