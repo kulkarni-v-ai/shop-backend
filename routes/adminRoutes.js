@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
+import User from "../models/User.js";
 import verifyToken, { authorize } from "../middleware/auth.js";
 import { logAction } from "../utils/logger.js";
 import { getStats } from "../controllers/analyticsController.js";
@@ -166,6 +167,74 @@ router.put("/users/:id/role", verifyToken, authorize("superadmin"), async (req, 
     });
 
     res.json({ message: "Role updated successfully", admin: adminToUpdate });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* =========================================
+   CUSTOMER MANAGEMENT
+   ========================================= */
+
+/* GET ALL CUSTOMERS */
+router.get("/customers", verifyToken, authorize("superadmin", "admin", "manager"), async (req, res) => {
+  try {
+    const customers = await User.find().select("-password");
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* UPDATE CUSTOMER */
+router.put("/customers/:id", verifyToken, authorize("superadmin", "admin"), async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
+    const customerToUpdate = await User.findById(req.params.id);
+    
+    if (!customerToUpdate) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    if (name) customerToUpdate.name = name;
+    if (email) customerToUpdate.email = email;
+    if (address) customerToUpdate.address = address;
+
+    await customerToUpdate.save();
+
+    await logAction({
+      userId: req.admin.id,
+      role: req.admin.role,
+      actionType: "UPDATE_CUSTOMER",
+      targetId: req.params.id,
+      ipAddress: req.ip
+    });
+
+    res.json({ message: "Customer updated successfully", customer: customerToUpdate });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* DELETE CUSTOMER */
+router.delete("/customers/:id", verifyToken, authorize("superadmin", "admin"), async (req, res) => {
+  try {
+    const customerToDelete = await User.findById(req.params.id);
+    if (!customerToDelete) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    await logAction({
+      userId: req.admin.id,
+      role: req.admin.role,
+      actionType: "DELETE_CUSTOMER",
+      targetId: req.params.id,
+      ipAddress: req.ip
+    });
+
+    res.json({ message: "Customer deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
