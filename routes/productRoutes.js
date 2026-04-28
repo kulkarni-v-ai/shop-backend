@@ -59,7 +59,6 @@ router.post("/", verifyToken, authorize("superadmin", "admin"), upload.array("im
     const { name, price, description, stock } = req.body;
 
     const category = req.body.category || "General";
-
     if (!name || !price) {
       return res.status(400).json({
         message: "Name and price are required",
