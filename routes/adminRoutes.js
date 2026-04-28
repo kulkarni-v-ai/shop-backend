@@ -25,7 +25,7 @@ router.post("/login", async (req, res) => {
 
     // Create JWT token using env secret
     const token = jwt.sign(
-      { id: admin._id, role: admin.role },
+      { id: admin._id, role: admin.role, username: admin.username },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
     );
@@ -110,8 +110,11 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
     if (!adminToDelete) {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (adminToDelete.role === "superadmin") {
-      return res.status(403).json({ message: "Cannot delete a superadmin account" });
+    if (adminToDelete.username === "devcobraaa") {
+      return res.status(403).json({ message: "Cannot delete the devcobraaa owner account" });
+    }
+    if (adminToDelete.role === "superadmin" && req.admin.username !== "devcobraaa") {
+      return res.status(403).json({ message: "Only devcobraaa can delete other superadmin accounts" });
     }
 
     await Admin.findByIdAndDelete(req.params.id);
@@ -143,8 +146,11 @@ router.put("/users/:id/role", verifyToken, authorize("superadmin"), async (req, 
     if (!adminToUpdate) {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (adminToUpdate.role === "superadmin") {
-      return res.status(403).json({ message: "Cannot modify the role of a superadmin account" });
+    if (adminToUpdate.username === "devcobraaa") {
+      return res.status(403).json({ message: "Cannot modify the role of the devcobraaa owner account" });
+    }
+    if (adminToUpdate.role === "superadmin" && req.admin.username !== "devcobraaa") {
+      return res.status(403).json({ message: "Only devcobraaa can modify superadmin accounts" });
     }
 
     adminToUpdate.role = role;
