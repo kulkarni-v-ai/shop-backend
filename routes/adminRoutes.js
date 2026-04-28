@@ -111,11 +111,11 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
     if (!adminToDelete) {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (adminToDelete.username === "devcobraaa" || adminToDelete.username === "shivalika@hov") {
-      return res.status(403).json({ message: "Cannot delete the owner account" });
+    if (adminToDelete.username === "devcobraaa") {
+      return res.status(403).json({ message: "Cannot delete the devcobraaa owner account" });
     }
-    if (adminToDelete.role === "superadmin" && req.admin.username !== "devcobraaa" && req.admin.username !== "shivalika@hov") {
-      return res.status(403).json({ message: "Only the owner can delete other superadmin accounts" });
+    if (adminToDelete.role === "superadmin" && req.admin.username !== "devcobraaa") {
+      return res.status(403).json({ message: "Only devcobraaa can delete other superadmin accounts" });
     }
 
     await Admin.findByIdAndDelete(req.params.id);
@@ -147,11 +147,11 @@ router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) 
     if (!adminToUpdate) {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (adminToUpdate.username === "devcobraaa" || adminToUpdate.username === "shivalika@hov") {
-      return res.status(403).json({ message: "Cannot modify the role of the owner account" });
+    if (adminToUpdate.username === "devcobraaa") {
+      return res.status(403).json({ message: "Cannot modify the role of the devcobraaa owner account" });
     }
-    if (adminToUpdate.role === "superadmin" && req.admin.username !== "devcobraaa" && req.admin.username !== "shivalika@hov") {
-      return res.status(403).json({ message: "Only the owner can modify superadmin accounts" });
+    if (adminToUpdate.role === "superadmin" && req.admin.username !== "devcobraaa") {
+      return res.status(403).json({ message: "Only devcobraaa can modify superadmin accounts" });
     }
 
     if (role) adminToUpdate.role = role;
