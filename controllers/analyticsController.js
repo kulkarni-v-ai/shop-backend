@@ -19,7 +19,8 @@ export const getStats = async (req, res) => {
             mostViewed,
             lowStockList,
             totalProducts,
-            lowStockCount
+            lowStockCount,
+            totalViewsAgg
         ] = await Promise.all([
             // 1. Summary: Total Orders & Revenue
             Order.aggregate([
@@ -78,17 +79,29 @@ export const getStats = async (req, res) => {
             Product.countDocuments(),
 
             // 7. Low Stock Count
-            Product.countDocuments({ stock: { $lt: 10 } })
+            Product.countDocuments({ stock: { $lt: 10 } }),
+
+            // 8. Total Views Count
+            Product.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalViews: { $sum: "$views" }
+                    }
+                }
+            ])
         ]);
 
         const summary = orderStats[0] || { totalOrders: 0, totalRevenue: 0 };
+        const totalViewsCount = totalViewsAgg[0]?.totalViews || 0;
 
         res.json({
             summary: {
                 totalOrders: summary.totalOrders,
                 totalRevenue: summary.totalRevenue,
                 totalProducts: totalProducts,
-                lowStockCount: lowStockCount
+                lowStockCount: lowStockCount,
+                viewsCount: totalViewsCount
             },
             ordersChart: ordersChart.map(day => ({
                 date: day._id,
