@@ -56,7 +56,7 @@ router.post("/login", async (req, res) => {
 /* SUPERADMIN ONLY: CREATING USERS */
 router.post("/register", verifyToken, authorize("superadmin"), async (req, res) => {
   try {
-    const { username, password, role, name, emailAddress, contactNumber, address } = req.body;
+    const { username, password, role, name, emailAddress, contactNumber, address, roleTag } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ message: "Please provide username and password" });
@@ -77,6 +77,7 @@ router.post("/register", verifyToken, authorize("superadmin"), async (req, res) 
       username,
       password: hashedPassword,
       role: assignedRole,
+      roleTag: roleTag || "",
       name: name || "",
       emailAddress: emailAddress || "",
       contactNumber: contactNumber || "",
@@ -151,7 +152,7 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
 /* SUPERADMIN ONLY: UPDATE USER (Role, Username, Password) */
 router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) => {
   try {
-    const { role, username, password, name, emailAddress, contactNumber, address } = req.body;
+    const { role, username, password, name, emailAddress, contactNumber, address, roleTag } = req.body;
     if (role && !["superadmin", "admin", "manager"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }
@@ -177,6 +178,8 @@ router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) 
     if (emailAddress !== undefined) adminToUpdate.emailAddress = emailAddress;
     if (contactNumber !== undefined) adminToUpdate.contactNumber = contactNumber;
     if (address !== undefined) adminToUpdate.address = address;
+    // Only devcobraaa can update roleTag
+    if (roleTag !== undefined && req.admin.username === "devcobraaa") adminToUpdate.roleTag = roleTag;
 
     if (password) {
       const salt = await bcrypt.genSalt(10);

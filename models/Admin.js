@@ -19,6 +19,7 @@ const adminSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
+  roleTag: { type: String, default: "" },
   name: { type: String, default: "" },
   emailAddress: { type: String, default: "" },
   contactNumber: { type: String, default: "" },
