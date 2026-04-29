@@ -56,15 +56,18 @@ router.post("/login", async (req, res) => {
 /* SUPERADMIN ONLY: CREATING USERS */
 router.post("/register", verifyToken, authorize("superadmin"), async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, name, emailAddress, contactNumber, address } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ message: "Please provide username and password" });
+    }
+
+    // Role defaults to manager, restrict other roles
+    const assignedRole = ["superadmin", "admin", "manager"].includes(role) ? role : "manager";
 
     const existingAdmin = await Admin.findOne({ username });
     if (existingAdmin) {
-      return res.status(400).json({ message: "Username already exists" });
-    }
-
-    if (req.admin.username !== "devcobraaa" && req.admin.role !== "superadmin") {
-      return res.status(403).json({ message: "Only devcobraaa or superadmins can create users" });
+      return res.status(400).json({ message: "Username already taken" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -73,7 +76,11 @@ router.post("/register", verifyToken, authorize("superadmin"), async (req, res) 
     const newAdmin = new Admin({
       username,
       password: hashedPassword,
-      role: role || "manager",
+      role: assignedRole,
+      name: name || "",
+      emailAddress: emailAddress || "",
+      contactNumber: contactNumber || "",
+      address: address || ""
     });
 
     const savedAdmin = await newAdmin.save();
@@ -144,7 +151,7 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
 /* SUPERADMIN ONLY: UPDATE USER (Role, Username, Password) */
 router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) => {
   try {
-    const { role, username, password } = req.body;
+    const { role, username, password, name, emailAddress, contactNumber, address } = req.body;
     if (role && !["superadmin", "admin", "manager"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }
@@ -166,6 +173,11 @@ router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) 
 
     if (role) adminToUpdate.role = role;
     if (username) adminToUpdate.username = username;
+    if (name !== undefined) adminToUpdate.name = name;
+    if (emailAddress !== undefined) adminToUpdate.emailAddress = emailAddress;
+    if (contactNumber !== undefined) adminToUpdate.contactNumber = contactNumber;
+    if (address !== undefined) adminToUpdate.address = address;
+
     if (password) {
       const salt = await bcrypt.genSalt(10);
       adminToUpdate.password = await bcrypt.hash(password, salt);
@@ -188,17 +200,35 @@ router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) 
   }
 });
 
+/* GET SELF PROFILE */
+router.get("/profile", verifyToken, async (req, res) => {
+  try {
+    const adminProfile = await Admin.findById(req.admin.id).select("-password");
+    if (!adminProfile) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    res.json(adminProfile);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 /* UPDATE SELF PROFILE */
 router.put("/profile", verifyToken, async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, name, emailAddress, contactNumber, address } = req.body;
     const adminToUpdate = await Admin.findById(req.admin.id);
     
     if (!adminToUpdate) {
       return res.status(404).json({ message: "Admin not found" });
     }
 
-    if (username) adminToUpdate.username = username;
+    if (username && adminToUpdate.username !== "devcobraaa") adminToUpdate.username = username;
+    if (name !== undefined) adminToUpdate.name = name;
+    if (emailAddress !== undefined) adminToUpdate.emailAddress = emailAddress;
+    if (contactNumber !== undefined) adminToUpdate.contactNumber = contactNumber;
+    if (address !== undefined) adminToUpdate.address = address;
+
     if (password) {
       const salt = await bcrypt.genSalt(10);
       adminToUpdate.password = await bcrypt.hash(password, salt);

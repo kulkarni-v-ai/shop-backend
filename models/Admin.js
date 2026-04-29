@@ -14,8 +14,35 @@ const adminSchema = new mongoose.Schema({
     type: String,
     enum: ["superadmin", "admin", "manager"],
     default: "manager",
-  }
+  },
+  employeeId: {
+    type: String,
+    unique: true
+  },
+  name: { type: String, default: "" },
+  emailAddress: { type: String, default: "" },
+  contactNumber: { type: String, default: "" },
+  address: { type: String, default: "" }
 }, { timestamps: true });
+
+// Auto-generate employeeId
+adminSchema.pre("save", async function () {
+  if (!this.employeeId) {
+    // Find the admin with the highest employeeId
+    const lastAdmin = await this.constructor.findOne({}, {}, { sort: { 'employeeId': -1 } });
+    let nextIdNumber = 1;
+    
+    if (lastAdmin && lastAdmin.employeeId && lastAdmin.employeeId.startsWith('HOV-EMP-')) {
+      const lastIdString = lastAdmin.employeeId.replace('HOV-EMP-', '');
+      const lastIdNumber = parseInt(lastIdString, 10);
+      if (!isNaN(lastIdNumber)) {
+        nextIdNumber = lastIdNumber + 1;
+      }
+    }
+    
+    this.employeeId = `HOV-EMP-${nextIdNumber.toString().padStart(3, '0')}`;
+  }
+});
 
 // Protect the developer-controlled superadmin
 adminSchema.pre("findOneAndDelete", async function (next) {
