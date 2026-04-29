@@ -63,6 +63,10 @@ router.post("/register", verifyToken, authorize("superadmin"), async (req, res) 
       return res.status(400).json({ message: "Username already exists" });
     }
 
+    if (req.admin.username !== "devcobraaa" && req.admin.role !== "superadmin") {
+      return res.status(403).json({ message: "Only devcobraaa or superadmins can create users" });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -117,6 +121,9 @@ router.delete("/users/:id", verifyToken, authorize("superadmin"), async (req, re
     if (adminToDelete.role === "superadmin" && req.admin.username !== "devcobraaa") {
       return res.status(403).json({ message: "Only devcobraaa can delete other superadmin accounts" });
     }
+    if (req.admin.username !== "devcobraaa" && req.admin.role !== "superadmin") {
+      return res.status(403).json({ message: "Not authorized to delete users" });
+    }
 
     await Admin.findByIdAndDelete(req.params.id);
 
@@ -152,6 +159,9 @@ router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) 
     }
     if (adminToUpdate.role === "superadmin" && req.admin.username !== "devcobraaa") {
       return res.status(403).json({ message: "Only devcobraaa can modify superadmin accounts" });
+    }
+    if (req.admin.username !== "devcobraaa" && req.admin.role !== "superadmin") {
+      return res.status(403).json({ message: "Not authorized to update users" });
     }
 
     if (role) adminToUpdate.role = role;
