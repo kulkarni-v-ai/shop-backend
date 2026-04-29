@@ -2,12 +2,26 @@ import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 
 /**
- * @route   GET /api/analytics/stats
- * @desc    Get real-time shop analytics using MongoDB Aggregation
+ * @route   GET /api/analytics/stats?range=week|month|year|lifetime
+ * @desc    Get real-time shop analytics with optional time range filter
  * @access  Private (Manager, Admin, Superadmin)
  */
 export const getStats = async (req, res) => {
     try {
+        const { range = "lifetime" } = req.query;
+
+        // Build date filter based on range
+        let dateFilter = {};
+        if (range !== "lifetime") {
+            const since = new Date();
+            since.setHours(0, 0, 0, 0);
+            if (range === "week")  since.setDate(since.getDate() - 7);
+            if (range === "month") since.setMonth(since.getMonth() - 1);
+            if (range === "year")  since.setFullYear(since.getFullYear() - 1);
+            dateFilter = { createdAt: { $gte: since } };
+        }
+
+        // Chart period — last 7 days always shown for the trend line
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -22,8 +36,9 @@ export const getStats = async (req, res) => {
             lowStockCount,
             totalViewsAgg
         ] = await Promise.all([
-            // 1. Summary: Total Orders & Revenue
+            // 1. Summary: Total Orders & Revenue (scoped to range)
             Order.aggregate([
+                { $match: dateFilter },
                 {
                     $group: {
                         _id: null,
@@ -33,13 +48,9 @@ export const getStats = async (req, res) => {
                 }
             ]),
 
-            // 2. Orders Chart: Last 7 Days
+            // 2. Orders Chart: Last 7 days (always)
             Order.aggregate([
-                {
-                    $match: {
-                        createdAt: { $gte: sevenDaysAgo }
-                    }
-                },
+                { $match: { createdAt: { $gte: sevenDaysAgo } } },
                 {
                     $group: {
                         _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -50,8 +61,9 @@ export const getStats = async (req, res) => {
                 { $sort: { _id: 1 } }
             ]),
 
-            // 3. Top Selling Products
+            // 3. Top Selling Products (scoped to range)
             Order.aggregate([
+                { $match: dateFilter },
                 { $unwind: "$items" },
                 {
                     $group: {
@@ -64,7 +76,7 @@ export const getStats = async (req, res) => {
                 { $limit: 8 }
             ]),
 
-            // 4. Most Viewed Products
+            // 4. Most Viewed Products (not time-scoped — views are cumulative)
             Product.find()
                 .sort({ views: -1 })
                 .limit(8)
@@ -83,12 +95,7 @@ export const getStats = async (req, res) => {
 
             // 8. Total Views Count
             Product.aggregate([
-                {
-                    $group: {
-                        _id: null,
-                        totalViews: { $sum: "$views" }
-                    }
-                }
+                { $group: { _id: null, totalViews: { $sum: "$views" } } }
             ])
         ]);
 
@@ -96,11 +103,12 @@ export const getStats = async (req, res) => {
         const totalViewsCount = totalViewsAgg[0]?.totalViews || 0;
 
         res.json({
+            range,
             summary: {
                 totalOrders: summary.totalOrders,
                 totalRevenue: summary.totalRevenue,
-                totalProducts: totalProducts,
-                lowStockCount: lowStockCount,
+                totalProducts,
+                lowStockCount,
                 viewsCount: totalViewsCount
             },
             ordersChart: ordersChart.map(day => ({
@@ -116,16 +124,15 @@ export const getStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Real Analytics Error:", error);
-        res.status(500).json({ message: "Failed to fetch real-time analytics data" });
+        console.error("Analytics Error:", error);
+        res.status(500).json({ message: "Failed to fetch analytics data" });
     }
 };
 
 /**
  * @route   GET /api/analytics/system-overview
- * @desc    Get basic system counts (Superadmin placeholder)
+ * @desc    Get basic system counts (Superadmin)
  */
 export const getSystemOverview = async (req, res) => {
-    // Kept minimal as per previous work, focusing on /stats
     res.json({ message: "System overview stats placeholder" });
 };
