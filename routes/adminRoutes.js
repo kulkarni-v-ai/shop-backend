@@ -154,8 +154,8 @@ router.put("/users/:id", verifyToken, authorize("superadmin"), async (req, res) 
     if (!adminToUpdate) {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (adminToUpdate.username === "devcobraaa") {
-      return res.status(403).json({ message: "Cannot modify the role of the devcobraaa owner account" });
+    if (adminToUpdate.username === "devcobraaa" && req.admin.username !== "devcobraaa") {
+      return res.status(403).json({ message: "Only devcobraaa can modify the owner account" });
     }
     if (adminToUpdate.role === "superadmin" && req.admin.username !== "devcobraaa") {
       return res.status(403).json({ message: "Only devcobraaa can modify superadmin accounts" });
