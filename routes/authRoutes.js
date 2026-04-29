@@ -46,18 +46,33 @@ router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        // Try user first
         const user = await User.findOne({ email });
-
         if (user && (await user.comparePassword(password))) {
-            res.json({
+            return res.json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
                 token: createToken(user._id, user.role),
             });
-        } else {
-            res.status(401).json({ message: "Invalid email or password" });
         }
+
+        // If no user, try admin (email field acts as username)
+        const Admin = (await import("../models/Admin.js")).default;
+        const bcrypt = (await import("bcryptjs")).default;
+        const admin = await Admin.findOne({ username: email });
+        
+        if (admin && (await bcrypt.compare(password, admin.password))) {
+            return res.json({
+                _id: admin._id,
+                username: admin.username,
+                role: admin.role,
+                token: createToken(admin._id, admin.role),
+            });
+        }
+
+        res.status(401).json({ message: "Invalid credentials" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

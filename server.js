@@ -10,6 +10,7 @@ import activityRoutes from "./routes/activityRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import cmsRoutes from "./routes/cmsRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 import createSuperAdmin from "./utils/createSuperAdmin.js";
 import dns from "dns";
 
@@ -47,6 +48,7 @@ app.use("/api/admin", activityRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/cms", cmsRoutes);
+app.use("/api/contact", contactRoutes);
 
 
 app.get("/", (req, res) => {
