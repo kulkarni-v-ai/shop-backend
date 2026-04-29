@@ -32,7 +32,9 @@ const userSchema = new mongoose.Schema({
         city: { type: String, default: "" },
         state: { type: String, default: "" },
         zip: { type: String, default: "" },
-    }
+    },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date
 }, { timestamps: true });
 
 // Hash password before saving if it's new or modified
